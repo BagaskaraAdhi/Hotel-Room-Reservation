@@ -8,12 +8,12 @@ Route::get('/', function () {
 });
 
 // cek signature key
-// Route::get('/test-signature', function () {
-//     $orderId = 4;
-//     $statusCode = 200;
-//     $grossAmount = 5000000;
-//     $serverKey = config('midtrans.server_key');
+Route::get('/test-signature', function () {
+    $orderId = 10;
+    $statusCode = 200;
+    $grossAmount = 50000;
+    $serverKey = config('midtrans.server_key');
 
-//     $stringToHash = $orderId . $statusCode . $grossAmount . $serverKey;
-//     return hash('sha512', $stringToHash);
-// });
+    $stringToHash = $orderId . $statusCode . $grossAmount . $serverKey;
+    return hash('sha512', $stringToHash);
+});

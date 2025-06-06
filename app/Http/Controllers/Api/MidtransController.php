@@ -8,14 +8,46 @@ use Midtrans\Config;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use OpenApi\Annotations as OA;
 
+
+/**
+ * @OA\Info(title="Midtrans Payment API", version="1.0")
+ * @OA\Tag(name="Payments", description="API untuk mengelola pembayaran menggunakan Midtrans")
+ */
 class MidtransController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/payments",
+     *     tags={"Payments"},
+     *     summary="Menampilkan semua data pembayaran",
+     *     @OA\Response(response=200, description="Daftar pembayaran berhasil ditampilkan")
+     * )
+     */
     public function index()
     {
         return Payment::all();
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/payments",
+     *     tags={"Payments"},
+     *     summary="Membuat pembayaran dan mendapatkan Snap Token",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"amount"},
+     *             @OA\Property(property="amount", type="number", example=100000),
+     *             @OA\Property(property="payment_method", type="string", example="credit_card"),
+     *             @OA\Property(property="customer_name", type="string", example="John Doe")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Snap token berhasil dibuat"),
+     *     @OA\Response(response=500, description="Gagal membuat pembayaran")
+     * )
+     */
     public function store(Request $request)
     {
         try {
@@ -64,11 +96,50 @@ class MidtransController extends Controller
         }
     }
 
+
+    /**
+     * @OA\Get(
+     *     path="/api/payments/{id}",
+     *     tags={"Payments"},
+     *     summary="Menampilkan detail pembayaran berdasarkan ID",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID pembayaran",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Detail pembayaran ditemukan"),
+     *     @OA\Response(response=404, description="Pembayaran tidak ditemukan")
+     * )
+     */
     public function show($id)
     {
         return Payment::findOrFail($id);
     }
 
+    /**
+     * @OA\Put(
+     *     path="/api/payments/{id}",
+     *     tags={"Payments"},
+     *     summary="Update data pembayaran",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID pembayaran",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="Paid"),
+     *             @OA\Property(property="payment_method", type="string", example="credit_card")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Pembayaran berhasil diupdate"),
+     *     @OA\Response(response=404, description="Pembayaran tidak ditemukan")
+     * )
+     */
     public function update(Request $request, $id)
     {
         $payment = Payment::findOrFail($id);
@@ -76,12 +147,48 @@ class MidtransController extends Controller
         return $payment;
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/api/payments/{id}",
+     *     tags={"Payments"},
+     *     summary="Menghapus pembayaran berdasarkan ID",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID pembayaran",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Pembayaran berhasil dihapus")
+     * )
+     */
     public function destroy($id)
     {
         Payment::destroy($id);
         return response()->json(['message' => 'Payment deleted']);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/payments/callback",
+     *     tags={"Payments"},
+     *     summary="Callback dari Midtrans untuk update status pembayaran",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"signature_key", "order_id", "status_code", "gross_amount", "transaction_status"},
+     *             @OA\Property(property="signature_key", type="string"),
+     *             @OA\Property(property="order_id", type="string"),
+     *             @OA\Property(property="status_code", type="string"),
+     *             @OA\Property(property="gross_amount", type="string"),
+     *             @OA\Property(property="transaction_status", type="string", example="settlement")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Status pembayaran diperbarui"),
+     *     @OA\Response(response=403, description="Signature tidak valid"),
+     *     @OA\Response(response=404, description="Pembayaran tidak ditemukan")
+     * )
+     */
     public function callback(Request $request)
     {
         $serverKey = config('midtrans.server_key');

@@ -1,0 +1,222 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Midtrans Payment API",
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/payments": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Menampilkan semua data pembayaran",
+                "operationId": "c7732b5197593b9216465b4c89957bdb",
+                "responses": {
+                    "200": {
+                        "description": "Daftar pembayaran berhasil ditampilkan"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Membuat pembayaran dan mendapatkan Snap Token",
+                "operationId": "4d18b974f35e5bcc5443060b26a3e053",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "amount"
+                                ],
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "example": 100000
+                                    },
+                                    "payment_method": {
+                                        "type": "string",
+                                        "example": "credit_card"
+                                    },
+                                    "customer_name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Snap token berhasil dibuat"
+                    },
+                    "500": {
+                        "description": "Gagal membuat pembayaran"
+                    }
+                }
+            }
+        },
+        "/api/payments/{id}": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Menampilkan detail pembayaran berdasarkan ID",
+                "operationId": "09b5ced23a60fac5708da0d1d5f98ae2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID pembayaran",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detail pembayaran ditemukan"
+                    },
+                    "404": {
+                        "description": "Pembayaran tidak ditemukan"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Update data pembayaran",
+                "operationId": "c422013925aafb7d1e2bed4a12edfa84",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID pembayaran",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "example": "Paid"
+                                    },
+                                    "payment_method": {
+                                        "type": "string",
+                                        "example": "credit_card"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pembayaran berhasil diupdate"
+                    },
+                    "404": {
+                        "description": "Pembayaran tidak ditemukan"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Menghapus pembayaran berdasarkan ID",
+                "operationId": "18cbb5ddf4ff49fb0a0d914555029a43",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID pembayaran",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pembayaran berhasil dihapus"
+                    }
+                }
+            }
+        },
+        "/api/payments/callback": {
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Callback dari Midtrans untuk update status pembayaran",
+                "operationId": "418c20a88301c4a0f1481c3bc1f5ad98",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "signature_key",
+                                    "order_id",
+                                    "status_code",
+                                    "gross_amount",
+                                    "transaction_status"
+                                ],
+                                "properties": {
+                                    "signature_key": {
+                                        "type": "string"
+                                    },
+                                    "order_id": {
+                                        "type": "string"
+                                    },
+                                    "status_code": {
+                                        "type": "string"
+                                    },
+                                    "gross_amount": {
+                                        "type": "string"
+                                    },
+                                    "transaction_status": {
+                                        "type": "string",
+                                        "example": "settlement"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status pembayaran diperbarui"
+                    },
+                    "403": {
+                        "description": "Signature tidak valid"
+                    },
+                    "404": {
+                        "description": "Pembayaran tidak ditemukan"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Payments",
+            "description": "API untuk mengelola pembayaran menggunakan Midtrans"
+        }
+    ]
+}
