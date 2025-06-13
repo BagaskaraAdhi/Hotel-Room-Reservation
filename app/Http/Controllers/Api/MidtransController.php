@@ -79,6 +79,11 @@ class MidtransController extends Controller
                 'customer_details' => [
                     'first_name' => $request->customer_name ?? 'Customer',
                 ],
+                'expiry' => [
+                    'start_time' => date("Y-m-d H:i:s O"), // 2025-06-06 15:00:00 +0700
+                    'unit' => 'hour',
+                    'duration' => 2 // token berlaku 2 jam
+                ]
             ];
 
             // Ambil Snap Token
