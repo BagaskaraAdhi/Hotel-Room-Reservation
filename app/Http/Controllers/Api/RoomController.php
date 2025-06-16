@@ -58,13 +58,20 @@ class RoomController extends Controller
         try {
             $validated = $request->validate([
                 'RoomNumber' => 'required|string|max:10|unique:room',
-                'RoomType' => 'required|string|max:50',
+                'RoomType' => 'required|string|max:50|in:single,double,twin,family,suite',
                 'Capacity' => 'required|integer|min:1',
                 'Status' => 'required|string|in:ready,maintenance',
-                'imageShowRoom' => 'nullable|string',
+                'imageShowRoom' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
                 'defaultPrice' => 'required|numeric|min:0',
                 'defaultExtraBedPrice' => 'required|numeric|min:0',
             ]);
+
+            if ($request->hasFile('imageShowRoom')) {
+                $image = $request->file('imageShowRoom');
+                $imageName = time() . '_' . $image->getClientOriginalName(); // membuat nama file unik
+                $image->move(public_path('uploads/room'), $imageName);
+                $validated['imageShowRoom'] = 'uploads/room/' . $imageName;
+            }
 
             $room = Room::create($validated);
 
@@ -95,17 +102,24 @@ class RoomController extends Controller
             }
 
             $validated = $request->validate([
-                'RoomNumber' => 'sometimes|string|max:10|unique:room,RoomNumber,' . $room->id,
-                'RoomType' => 'sometimes|string|in:Single,double,twin,family,suite',
+                'RoomNumber' => 'sometimes|string|max:10|unique:room,RoomNumber,'.$room->id,
+                'RoomType' => 'sometimes|string|in:single,double,twin,family,suite',
                 'Capacity' => 'sometimes|integer|min:1',
                 'Status' => 'sometimes|string|in:ready,maintenance',
-                'imageShowRoom' => 'nullable|string',
+                'imageShowRoom' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
                 'defaultPrice' => 'sometimes|numeric|min:0',
                 'defaultExtraBedPrice' => 'sometimes|numeric|min:0',
             ]);
 
-            $room->update($validated);
+            if ($request->hasFile('imageShowRoom')) {
+                $image = $request->file('imageShowRoom');
+                $imageName = time().'_'.$image->getClientOriginalName();
+                $image->move(public_path('uploads/room'),$imageName);
+                $validated['imageShowRoom'] = 'uploads/room/'.$imageName;
+            }
 
+            $room->update($validated);
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Room updated successfully',
