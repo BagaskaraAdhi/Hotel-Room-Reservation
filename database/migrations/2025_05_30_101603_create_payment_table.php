@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('payment', function (Blueprint $table) {
             $table->id();
             // $table->foreignId('reservation_id')->constrained('reservation')->onDelete('cascade');
+            $table->bigInteger('amount')->default(0);
             $table->enum('payment_method', ['credit_card', 'debit_card', 'cash', 'online'])->default('credit_card');
             $table->enum('status', ['Paid', 'Unpaid', 'Failed', 'Refunded'])->default('Unpaid');
             $table->timestamp('paid_at')->nullable();

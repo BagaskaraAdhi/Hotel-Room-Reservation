@@ -10,49 +10,8 @@ use Illuminate\Support\Facades\Hash;
 use OpenApi\Annotations as OA;
 use Psy\Readline\Userland;
 
-/**
- * @OA\OpenApi(
- *     @OA\Info(
- *         title="Hotel Room Reservation",
- *         version="1.0"
- *     ),
- *     @OA\Components(
- *         @OA\SecurityScheme(
- *             securityScheme="bearerAuth",
- *             type="http",
- *             scheme="bearer",
- *             bearerFormat="JWT"
- *         )
- *     )
- * )
- *
- * @OA\Tag(
- *     name="Auth",
- *     description="API untuk autentikasi user dan admin"
- * )
- */
 class AuthController extends Controller
 {
-    /**
-     * @OA\Post(
-     *     path="/api/register",
-     *     tags={"Auth"},
-     *     summary="Registrasi akun baru",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"username", "phone_number", "email", "password"},
-     *             @OA\Property(property="username", type="string", example="alif"),
-     *             @OA\Property(property="role", type="string", enum={"admin", "user"}, example="user"),
-     *             @OA\Property(property="phone_number", type="string", example="081234567890"),
-     *             @OA\Property(property="email", type="string", format="email", example="alif@gmail.com"),
-     *             @OA\Property(property="password", type="string", format="password", example="alif1234")
-     *         )
-     *     ),
-     *     @OA\Response(response=201, description="User berhasil diregistrasi"),
-     *     @OA\Response(response=422, description="Validasi gagal")
-     * )
-     */
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -74,24 +33,6 @@ class AuthController extends Controller
         return response()->json(['user' => $user], 201);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/login",
-     *     tags={"Auth"},
-     *     summary="Login dan dapatkan token JWT (berlaku 2 jam)",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email", "password"},
-     *             @OA\Property(property="email", type="string", format="email", example="alif@gmail.com"),
-     *             @OA\Property(property="password", type="string", example="alif1234")
-     *         )
-     *     ),
-     *     @OA\Response(response=200, description="Login berhasil"),
-     *     @OA\Response(response=401, description="Kredensial salah"),
-     *     @OA\Response(response=422, description="Validasi gagal")
-     * )
-     */
     public function login(Request $request)
     {
         $validated = $request->validate([
@@ -116,32 +57,12 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/logout",
-     *     tags={"Auth"},
-     *     summary="Logout user (hapus token saat ini)",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="Logout berhasil"),
-     *     @OA\Response(response=401, description="Unauthorized")
-     * )
-     */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out']);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/me",
-     *     tags={"Auth"},
-     *     summary="Get data user yang sedang login",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="User data berhasil ditampilkan"),
-     *     @OA\Response(response=401, description="Unauthorized")
-     * )
-     */
     public function me(Request $request)
     {
         return response()->json($request->user());

@@ -24,7 +24,7 @@ class RoleMiddleware
         }
 
         // Cek apakah role user sesuai
-        if (auth()->users()->role !== $role) {
+        if (auth()->user()->role !== $role) {
             return response()->json(['message' => 'Forbidden - You do not have access'], 403);
         }
 
