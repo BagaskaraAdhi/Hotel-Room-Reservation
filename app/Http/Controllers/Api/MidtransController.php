@@ -8,11 +8,11 @@ use Midtrans\Config;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use OpenApi\Annotations as OA;
 
 
 /**
- * @OA\Info(title="Midtrans Payment API", version="1.0")
  * @OA\Tag(name="Payments", description="API untuk mengelola pembayaran menggunakan Midtrans")
  */
 class MidtransController extends Controller
@@ -81,8 +81,8 @@ class MidtransController extends Controller
                 ],
                 'expiry' => [
                     'start_time' => date("Y-m-d H:i:s O"), // 2025-06-06 15:00:00 +0700
-                    'unit' => 'hour',
-                    'duration' => 2 // token berlaku 2 jam
+                    'unit' => 'minute',
+                    'duration' =>  2 // token berlaku 2 jam
                 ]
             ];
 
@@ -147,9 +147,34 @@ class MidtransController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // $user = Auth::user();
+        // if (!$user || $user->role !== 'admin') {
+        //     return response()->json(['message' => 'Forbidden'], 403);
+        // }
+
+        // try {
+        //     $payment = Payment::findOrFail($id);
+        //     $payment->update($request->only(['status', 'payment_method']));
+        //     return response()->json($payment);
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'error' => 'Something went wrong',
+        //         'message' => $e->getMessage()
+        //     ], 500);
+        // }
+
+
+        // menampilkan semua data user
+        // Cek apakah user login dan rolenya admin
+        if (!Auth::check() || Auth::User()->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden - Hanya admin yang bisa update'], 403);
+        }
+
+        // Kalau admin, lanjut update
         $payment = Payment::findOrFail($id);
         $payment->update($request->all());
-        return $payment;
+
+        return response()->json(['message' => 'Data pembayaran berhasil diupdate', 'data' => $payment]);
     }
 
     /**
@@ -169,7 +194,20 @@ class MidtransController extends Controller
      */
     public function destroy($id)
     {
-        Payment::destroy($id);
+        // $user = Auth::user();
+
+        // if (!$user || $user->role !== 'admin') {
+        //     return response()->json(['message' => 'Forbidden'], 403);
+        // }
+
+        $payment = Payment::find($id);
+
+        if (!$payment) {
+            return response()->json(['message' => 'Payment not found'], 404);
+        }
+
+        $payment->delete();
+
         return response()->json(['message' => 'Payment deleted']);
     }
 
@@ -196,26 +234,20 @@ class MidtransController extends Controller
      */
     public function callback(Request $request)
     {
-        $serverKey = config('midtrans.server_key');
-        $signatureKey = $request->signature_key;
         $orderId = $request->order_id;
-        $statusCode = $request->status_code;
-        $grossAmount = $request->gross_amount;
-
-        $mySignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
-        if ($signatureKey !== $mySignature) {
-            return response()->json(['message' => 'Invalid signature'], 403);
-        }
+        $transactionStatus = $request->transaction_status;
 
         $payment = Payment::find($orderId);
-        if (!$payment) return response()->json(['message' => 'Payment not found'], 404);
+        if (!$payment) {
+            return response()->json(['message' => 'Payment not found'], 404);
+        }
 
-        if (in_array($request->transaction_status, ['settlement', 'capture'])) {
+        if (in_array($transactionStatus, ['settlement', 'capture'])) {
             $payment->status = 'Paid';
             $payment->paid_at = Carbon::now();
-        } elseif (in_array($request->transaction_status, ['expire', 'cancel'])) {
+        } elseif (in_array($transactionStatus, ['expire', 'cancel'])) {
             $payment->status = 'Failed';
-        } elseif ($request->transaction_status == 'refund') {
+        } elseif ($transactionStatus == 'refund') {
             $payment->status = 'Refunded';
         }
 
