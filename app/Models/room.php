@@ -2,13 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class room extends Model
+class Room extends Model
 {
+    use HasApiTokens, HasFactory, Notifiable;
+
+    protected $table = 'room';
+
     protected $fillable = [
-        'RoomNumber', 'Type', 'capacity', 'status', 'imagesRoom',
-        'default_price', 'default_extra_bed_price',
+        'RoomNumber', 'RoomType', 'Capacity', 'Status', 'imageShowRoom',
+        'defaultPrice', 'defaultExtraBedPrice',
     ];
 
+    protected $hidden = [
+        'created_at', 'updated_at',
+    ];
 }
