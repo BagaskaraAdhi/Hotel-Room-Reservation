@@ -22,36 +22,48 @@ class MidtransController extends Controller
     public function store(Request $request)
     {
         try {
-            // Validasi input
-            $request->validate([
+            $validated = $request->validate([
                 'reservation_id' => 'required|exists:reservation,id',
                 'amount' => 'required|numeric|min:1',
-                'payment_method' => 'nullable|in:credit_card,debit_card,cash,online',
-                'customer_name' => 'nullable|string',
+                'payment_method' => 'required|in:credit_card,debit_card,cash,online',
+                'customer_name' => 'nullable|string'
             ]);
 
-            // Buat payment terkait reservation
+            // Tentukan status awal
+            $status = $validated['payment_method'] === 'cash' ? 'Paid' : 'Unpaid';
+
+            // 1. Simpan data pembayaran
             $payment = Payment::create([
-                'reservation_id' => $request->reservation_id,
-                'payment_method' => $request->payment_method ?? 'online',
-                'status' => 'Unpaid',
-                'amount' => $request->amount,
+                'reservation_id' => $validated['reservation_id'],
+                'amount' => $validated['amount'],
+                'payment_method' => $validated['payment_method'],
+                'status' => $status,
             ]);
 
-            // Konfigurasi Midtrans
+            // 2. Kalau metode cash, langsung return tanpa Midtrans
+            if ($validated['payment_method'] === 'cash') {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cash payment recorded successfully',
+                    'payment' => $payment
+                ]);
+            }
+
+            // 3. Jika online atau kartu, jalankan Midtrans
             \Midtrans\Config::$serverKey = config('midtrans.server_key');
             \Midtrans\Config::$isProduction = config('midtrans.is_production');
             \Midtrans\Config::$isSanitized = true;
             \Midtrans\Config::$is3ds = true;
 
-            // Parameter Snap
+            $orderId = 'PAY-' . $payment->id . '-' . time();
+
             $params = [
                 'transaction_details' => [
-                    'order_id' => $payment->id,
-                    'gross_amount' => $request->amount,
+                    'order_id' => $orderId,
+                    'gross_amount' => $validated['amount'],
                 ],
                 'customer_details' => [
-                    'first_name' => $request->customer_name ?? 'Customer',
+                    'first_name' => $validated['customer_name'] ?? 'Customer',
                 ],
                 'expiry' => [
                     'start_time' => date("Y-m-d H:i:s O"),
@@ -63,13 +75,16 @@ class MidtransController extends Controller
             $snapToken = \Midtrans\Snap::getSnapToken($params);
 
             return response()->json([
+                'success' => true,
+                'message' => 'Payment created and Midtrans Snap token generated',
                 'payment' => $payment,
                 'snap_token' => $snapToken
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Failed to create payment',
-                'message' => $e->getMessage()
+                'success' => false,
+                'message' => 'Failed to create payment',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -92,34 +107,46 @@ class MidtransController extends Controller
 
     public function update(Request $request, $id)
     {
-        // $user = Auth::user();
-        // if (!$user || $user->role !== 'admin') {
-        //     return response()->json(['message' => 'Forbidden'], 403);
-        // }
+        try {
+            // Validasi input
+            $validated = $request->validate([
+                'amount' => 'sometimes|numeric|min:1',
+                'payment_method' => 'sometimes|in:credit_card,debit_card,cash,online',
+                'status' => 'sometimes|in:Unpaid,Paid',
+                'paid_at' => 'nullable|date',
+            ]);
 
-        // try {
-        //     $payment = Payment::findOrFail($id);
-        //     $payment->update($request->only(['status', 'payment_method']));
-        //     return response()->json($payment);
-        // } catch (\Exception $e) {
-        //     return response()->json([
-        //         'error' => 'Something went wrong',
-        //         'message' => $e->getMessage()
-        //     ], 500);
-        // }
+            // Ambil data payment berdasarkan ID
+            $payment = Payment::findOrFail($id);
 
+            // Update field yang ada di request
+            $payment->update($validated);
 
-        // menampilkan semua data user
-        // Cek apakah user login dan rolenya admin
-        if (!Auth::check() || Auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Forbidden - Hanya admin yang bisa update'], 403);
+            // Jika status pembayaran menjadi 'Paid', ubah status reservasi ke 'confirmed'
+            if (isset($validated['status']) && $validated['status'] === 'Paid') {
+                $payment->reservation()->update([
+                    'status' => 'confirmed'
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment updated successfully',
+                'payment' => $payment
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update payment',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Kalau admin, lanjut update
-        $payment = Payment::findOrFail($id);
-        $payment->update($request->all());
-
-        return response()->json(['message' => 'Data pembayaran berhasil diupdate', 'data' => $payment]);
     }
 
     public function destroy($id)
