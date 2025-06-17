@@ -13,8 +13,7 @@ class RiviewController extends Controller
     public function index()
     {
         try {
-            // $reviews = Reviews::with(['user', 'reservation'])->get();
-            $reviews = Reviews::with(['user'])->get();
+            $reviews = Reviews::with(['user', 'reservation'])->get();
 
             return response()->json([
                 'success' => true,
@@ -33,8 +32,7 @@ class RiviewController extends Controller
     public function show($id)
     {
         try {
-            // $review = Reviews::with(['user', 'reservation'])->find($id);
-            $review = Reviews::with(['user'])->find($id);
+            $review = Reviews::with(['user', 'reservation'])->find($id);
 
             if (!$review) {
                 return response()->json([
@@ -62,7 +60,7 @@ class RiviewController extends Controller
         try {
             $validated = $request->validate([
                 'user_id' => 'required|exists:users,id',
-                // 'reservation_id' => 'required|exists:reservations,id',
+                'reservation_id' => 'required|exists:reservation,id',
                 'rating' => 'required|integer|min:1|max:5',
                 'comment' => 'nullable|string',
             ]);
@@ -97,7 +95,7 @@ class RiviewController extends Controller
 
             $validated = $request->validate([
                 'user_id' => 'sometimes|exists:users,id',
-                // 'reservation_id' => 'sometimes|exists:reservations,id',
+                'reservation_id' => 'sometimes|exists:reservation,id',
                 'rating' => 'sometimes|integer|min:1|max:5',
                 'comment' => 'nullable|string',
             ]);
