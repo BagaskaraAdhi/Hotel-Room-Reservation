@@ -4,12 +4,11 @@
         "title": "Hotel Room Reservation",
         "version": "1.0"
     },
+
     "paths": {
         "/api/register": {
             "post": {
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "summary": "Registrasi akun baru",
                 "operationId": "8e4e3cb7b46126f4696379d3c7eeb4ad",
                 "requestBody": {
@@ -26,29 +25,26 @@
                                 "properties": {
                                     "username": {
                                         "type": "string",
-                                        "example": "alif"
+                                        "example": "nafii"
                                     },
                                     "role": {
                                         "type": "string",
-                                        "enum": [
-                                            "admin",
-                                            "user"
-                                        ],
+                                        "enum": ["admin", "user"],
                                         "example": "user"
                                     },
                                     "phone_number": {
                                         "type": "string",
-                                        "example": "081234567890"
+                                        "example": "085233361858"
                                     },
                                     "email": {
                                         "type": "string",
                                         "format": "email",
-                                        "example": "alif@gmail.com"
+                                        "example": "nafi19@gmail.com"
                                     },
                                     "password": {
                                         "type": "string",
                                         "format": "password",
-                                        "example": "alif1234"
+                                        "example": "nafi1234"
                                     }
                                 },
                                 "type": "object"
@@ -68,9 +64,7 @@
         },
         "/api/login": {
             "post": {
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "summary": "Login dan dapatkan token JWT (berlaku 2 jam)",
                 "operationId": "222b2625838e3c57e017987f73598fda",
                 "requestBody": {
@@ -78,19 +72,16 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "email",
-                                    "password"
-                                ],
+                                "required": ["email", "password"],
                                 "properties": {
                                     "email": {
                                         "type": "string",
                                         "format": "email",
-                                        "example": "alif@gmail.com"
+                                        "example": "nafi19@gmail.com"
                                     },
                                     "password": {
                                         "type": "string",
-                                        "example": "alif1234"
+                                        "example": "nafi1234"
                                     }
                                 },
                                 "type": "object"
@@ -113,9 +104,7 @@
         },
         "/api/logout": {
             "post": {
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "summary": "Logout user (hapus token saat ini)",
                 "operationId": "ad65cbbd4e9f201619eae184a5961a98",
                 "responses": {
@@ -135,9 +124,7 @@
         },
         "/api/me": {
             "get": {
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "summary": "Get data user yang sedang login",
                 "operationId": "8367feff40ba10e43187792cad3132c1",
                 "responses": {
@@ -157,9 +144,7 @@
         },
         "/api/payments": {
             "get": {
-                "tags": [
-                    "Payments"
-                ],
+                "tags": ["Payments"],
                 "summary": "Menampilkan semua data pembayaran",
                 "operationId": "c7732b5197593b9216465b4c89957bdb",
                 "responses": {
@@ -169,9 +154,7 @@
                 }
             },
             "post": {
-                "tags": [
-                    "Payments"
-                ],
+                "tags": ["Payments"],
                 "summary": "Membuat pembayaran dan mendapatkan Snap Token",
                 "operationId": "4d18b974f35e5bcc5443060b26a3e053",
                 "requestBody": {
@@ -179,9 +162,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "amount"
-                                ],
+                                "required": ["amount"],
                                 "properties": {
                                     "amount": {
                                         "type": "number",
@@ -193,7 +174,7 @@
                                     },
                                     "customer_name": {
                                         "type": "string",
-                                        "example": "John Doe"
+                                        "example": "Mr. Nafi"
                                     }
                                 },
                                 "type": "object"
@@ -213,9 +194,7 @@
         },
         "/api/payments/{id}": {
             "get": {
-                "tags": [
-                    "Payments"
-                ],
+                "tags": ["Payments"],
                 "summary": "Menampilkan detail pembayaran berdasarkan ID",
                 "operationId": "09b5ced23a60fac5708da0d1d5f98ae2",
                 "parameters": [
@@ -239,9 +218,7 @@
                 }
             },
             "put": {
-                "tags": [
-                    "Payments"
-                ],
+                "tags": ["Payments"],
                 "summary": "Update data pembayaran",
                 "operationId": "c422013925aafb7d1e2bed4a12edfa84",
                 "parameters": [
@@ -284,9 +261,7 @@
                 }
             },
             "delete": {
-                "tags": [
-                    "Payments"
-                ],
+                "tags": ["Payments"],
                 "summary": "Menghapus pembayaran berdasarkan ID",
                 "operationId": "18cbb5ddf4ff49fb0a0d914555029a43",
                 "parameters": [
@@ -309,9 +284,7 @@
         },
         "/api/payments/callback": {
             "post": {
-                "tags": [
-                    "Payments"
-                ],
+                "tags": ["Payments"],
                 "summary": "Callback dari Midtrans untuk update status pembayaran",
                 "operationId": "418c20a88301c4a0f1481c3bc1f5ad98",
                 "requestBody": {
