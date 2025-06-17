@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MidtransController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\ReservationController;
+use App\Http\Controllers\Api\RiviewController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -14,7 +15,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
-    // user access
+    // all access
     Route::get('/room', [RoomController::class, 'index']);
     Route::get('/room/{id}', [RoomController::class, 'show']);
 
@@ -27,6 +28,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments', [MidtransController::class, 'index']);
     Route::get('/payments/{id}', [MidtransController::class, 'show']);
     Route::post('/payments', [MidtransController::class, 'store']);
+
+    Route::get('/reviews', [RiviewController::class, 'index']);
+    Route::get('/reviews/{id}', [RiviewController::class, 'show']);
+    Route::post('/reviews', [RiviewController::class, 'store']);
+    Route::put('/reviews/{id}', [RiviewController::class, 'update']);
+    Route::delete('/reviews/{id}', [RiviewController::class, 'destroy']);
 
     // admin access
     Route::middleware('role:admin')->group(function () {
