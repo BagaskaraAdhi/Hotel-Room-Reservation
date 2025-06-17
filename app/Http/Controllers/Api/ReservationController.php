@@ -56,17 +56,25 @@ class ReservationController extends Controller
             'check_in_date' => 'required|date',
             'check_out_date' => 'required|date|after_or_equal:check_in_date',
             'extra_beds' => 'nullable|integer|min:0',
-            'user_id' => $isAdmin ? 'required|exists:users,id' : '',
+            'user_id' => $isAdmin ? 'required|exists:users,id' : 'sometimes|nullable', // biarkan bisa dikirim tapi opsional untuk user biasa
         ]);
+
+        // ❌ Blokir user biasa yang mencoba menyertakan user_id
+        if (!$isAdmin && isset($validated['user_id'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya admin yang bisa mengubah data user_id.',
+            ], 403);
+        }
 
         $room = Room::findOrFail($validated['room_id']);
         $extraBeds = $validated['extra_beds'] ?? 0;
 
         $defaultPrice = $room->defaultPrice;
         $extraBedPrice = $extraBeds * $room->defaultExtraBedPrice;
-        $discount = $room->discount;
 
-        $totalPrice = ($defaultPrice + $extraBedPrice) - ($defaultPrice * $discount);
+        $discountPercentage = $room->discount ? $room->discount / 100 : 0;
+        $totalPrice = ($defaultPrice + $extraBedPrice) - ($defaultPrice * $discountPercentage);
 
         $reservation = reservation::create([
             'user_id' => $isAdmin ? $validated['user_id'] : $user->id,
@@ -102,10 +110,12 @@ class ReservationController extends Controller
         $reservation = reservation::findOrFail($id);
         $user = Auth::user();
 
+        // Cek hak akses user terhadap data ini
         if ($user->role !== 'admin' && $reservation->user_id !== $user->id) {
             return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
         }
 
+        // Aturan validasi
         $rules = $user->role === 'admin'
             ? [
                 'user_id' => 'sometimes|exists:users,id',
@@ -123,13 +133,24 @@ class ReservationController extends Controller
 
         $validated = $request->validate($rules);
 
+        // Cek jika user mencoba menyisipkan user_id atau room_id padahal bukan admin
+        if ($user->role !== 'admin' && ($request->has('user_id') || $request->has('room_id') || $request->has('status'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya admin yang bisa mengubah data user_id, room_id, atau status.'
+            ], 403);
+        }
+
+        // Isi data yang tervalidasi
         $reservation->fill($validated);
 
+        // Hitung ulang total_price dan extra_bed_price
         $room = $reservation->room;
-
-        $extraBeds = $reservation->extra_beds;
+        $extraBeds = $reservation->extra_beds ?? 0;
         $reservation->extra_bed_price = $extraBeds * $room->defaultExtraBedPrice;
-        $reservation->total_price = ($room->defaultPrice + $reservation->extra_bed_price) - ($room->defaultPrice * $room->discount);
+
+        $discountPercentage = $room->discount ? $room->discount / 100 : 0;
+        $reservation->total_price = ($room->defaultPrice + $reservation->extra_bed_price) - ($room->defaultPrice * $discountPercentage);
 
         $reservation->save();
 
@@ -140,15 +161,11 @@ class ReservationController extends Controller
         ]);
     }
 
+
     // Delete
     public function destroy($id)
     {
         $reservation = reservation::with(['user', 'room'])->findOrFail($id);
-        $user = Auth::user();
-
-        if ($user->role !== 'admin' && $reservation->user_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
-        }
 
         $reservation->delete();
 
