@@ -144,27 +144,802 @@
                 ]
             }
         },
+        "/api/payments": {
+            "get": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Tampilkan semua data pembayaran (Hanya Admin)",
+                "description": "Mengambil daftar lengkap semua transaksi pembayaran. Endpoint ini sebaiknya hanya dapat diakses oleh admin.",
+                "operationId": "c7732b5197593b9216465b4c89957bdb",
+                "responses": {
+                    "200": {
+                        "description": "Daftar pembayaran berhasil diambil"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Buat pembayaran dan dapatkan Snap Token Midtrans",
+                "description": "Membuat record pembayaran di database. Jika metode pembayaran 'cash', proses selesai. Jika 'online' atau kartu, akan menghasilkan snap_token dari Midtrans untuk ditampilkan di frontend.",
+                "operationId": "4d18b974f35e5bcc5443060b26a3e053",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "reservation_id",
+                                    "amount",
+                                    "payment_method"
+                                ],
+                                "properties": {
+                                    "reservation_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "amount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 550000
+                                    },
+                                    "payment_method": {
+                                        "type": "string",
+                                        "enum": [
+                                            "credit_card",
+                                            "debit_card",
+                                            "cash",
+                                            "online"
+                                        ],
+                                        "example": "online"
+                                    },
+                                    "customer_name": {
+                                        "description": "Opsional, nama pelanggan.",
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pembayaran berhasil dibuat. Jika metode online, response akan berisi 'snap_token'.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "payment": {
+                                            "type": "object"
+                                        },
+                                        "snap_token": {
+                                            "description": "Hanya muncul jika metode pembayaran bukan 'cash'.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    },
+                    "500": {
+                        "description": "Server Error (Gagal membuat pembayaran atau token)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/payments/{id}": {
+            "get": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Tampilkan detail pembayaran",
+                "description": "Mengambil detail satu data pembayaran berdasarkan ID.",
+                "operationId": "09b5ced23a60fac5708da0d1d5f98ae2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Pembayaran",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil detail pembayaran"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Update data pembayaran (Hanya Admin)",
+                "description": "Memperbarui status atau detail pembayaran. Jika status diubah menjadi 'Paid', status reservasi terkait akan menjadi 'confirmed'. Endpoint ini hanya untuk admin.",
+                "operationId": "c422013925aafb7d1e2bed4a12edfa84",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Pembayaran",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Unpaid",
+                                            "Paid"
+                                        ],
+                                        "example": "Paid"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pembayaran berhasil diupdate"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Hapus data pembayaran (Hanya Admin)",
+                "description": "Menghapus data pembayaran dari database. Endpoint ini hanya untuk admin.",
+                "operationId": "18cbb5ddf4ff49fb0a0d914555029a43",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Pembayaran",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pembayaran berhasil dihapus"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/midtrans/callback": {
+            "post": {
+                "tags": [
+                    "Midtrans Webhook"
+                ],
+                "summary": "Callback Notifikasi Pembayaran Midtrans",
+                "description": "ENDPOINT INI BUKAN UNTUK DIGUNAKAN OLEH FRONTEND. Endpoint ini menerima notifikasi (webhook) dari server Midtrans untuk update status pembayaran secara otomatis.",
+                "operationId": "70804a1de6576a2b99396d786d75a2ae",
+                "requestBody": {
+                    "description": "Payload yang dikirim oleh server Midtrans.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "transaction_time": {
+                                        "type": "string",
+                                        "example": "2025-06-18 09:10:00"
+                                    },
+                                    "transaction_status": {
+                                        "type": "string",
+                                        "example": "settlement"
+                                    },
+                                    "transaction_id": {
+                                        "type": "string",
+                                        "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                    },
+                                    "status_message": {
+                                        "type": "string",
+                                        "example": "midtrans payment notification"
+                                    },
+                                    "status_code": {
+                                        "type": "string",
+                                        "example": "200"
+                                    },
+                                    "signature_key": {
+                                        "type": "string"
+                                    },
+                                    "payment_type": {
+                                        "type": "string",
+                                        "example": "gopay"
+                                    },
+                                    "order_id": {
+                                        "type": "string",
+                                        "example": "PAY-1-1749875460"
+                                    },
+                                    "merchant_id": {
+                                        "type": "string"
+                                    },
+                                    "gross_amount": {
+                                        "type": "string",
+                                        "example": "550000.00"
+                                    },
+                                    "fraud_status": {
+                                        "type": "string",
+                                        "example": "accept"
+                                    },
+                                    "currency": {
+                                        "type": "string",
+                                        "example": "IDR"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Notifikasi berhasil diproses"
+                    },
+                    "404": {
+                        "description": "Order ID tidak ditemukan"
+                    }
+                }
+            }
+        },
+        "/api/reservations": {
+            "get": {
+                "tags": [
+                    "Reservation"
+                ],
+                "summary": "Tampilkan semua reservasi",
+                "description": "Admin melihat semua reservasi. User hanya melihat reservasi miliknya sendiri.",
+                "operationId": "f10e68ff0ce263ef754b2f640eda8d93",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data reservasi"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Reservation"
+                ],
+                "summary": "Buat reservasi baru",
+                "description": "User membuat reservasi untuk dirinya sendiri. Admin bisa membuat reservasi untuk user lain dengan menyertakan 'user_id'.",
+                "operationId": "4f59911f11563f79b4f01bd02222607d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "room_id",
+                                    "check_in_date",
+                                    "check_out_date"
+                                ],
+                                "properties": {
+                                    "room_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "check_in_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2025-12-20"
+                                    },
+                                    "check_out_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2025-12-22"
+                                    },
+                                    "extra_beds": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "user_id": {
+                                        "description": "[Khusus Admin] ID user yang melakukan reservasi.",
+                                        "type": "integer",
+                                        "example": 2
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Reservasi berhasil dibuat"
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reservations/{id}": {
+            "get": {
+                "tags": [
+                    "Reservation"
+                ],
+                "summary": "Tampilkan detail reservasi",
+                "description": "Admin dapat melihat detail reservasi manapun. User hanya dapat melihat miliknya.",
+                "operationId": "14c077250033bb10a7305f9724f10bd4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Reservasi",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil detail reservasi"
+                    },
+                    "403": {
+                        "description": "Forbidden (tidak punya hak akses)"
+                    },
+                    "404": {
+                        "description": "Not Found (data tidak ditemukan)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Reservation"
+                ],
+                "summary": "Update reservasi",
+                "description": "Admin bisa update semua field. User hanya bisa update check_in_date, check_out_date, dan extra_beds.",
+                "operationId": "453c2db0a909455ff1a629a0ed80f9a8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Reservasi",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "check_in_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2025-12-21"
+                                    },
+                                    "extra_beds": {
+                                        "type": "integer",
+                                        "example": 0
+                                    },
+                                    "status": {
+                                        "description": "[Khusus Admin] Status reservasi.",
+                                        "type": "string",
+                                        "enum": [
+                                            "pending",
+                                            "confirmed",
+                                            "cancelled",
+                                            "CheckIn",
+                                            "CheckOut"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reservasi berhasil diupdate"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Reservation"
+                ],
+                "summary": "Hapus reservasi",
+                "description": "Menghapus reservasi. Hanya admin atau user yang memiliki reservasi yang bisa menghapus.",
+                "operationId": "3f3a1d6e7ffee88b7ef58128a7f9295c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Reservasi",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reservasi berhasil dihapus"
+                    },
+                    "403": {
+                        "description": "Forbidden (bukan pemilik atau admin)"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reviews": {
+            "get": {
+                "tags": [
+                    "Review"
+                ],
+                "summary": "Tampilkan semua review",
+                "description": "Mengambil daftar lengkap semua review dari semua user.",
+                "operationId": "ab90a0abe90d35c68285c04be51c5cd6",
+                "responses": {
+                    "200": {
+                        "description": "Daftar review berhasil diambil"
+                    },
+                    "500": {
+                        "description": "Server Error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Review"
+                ],
+                "summary": "Buat review baru dengan user_id manual",
+                "description": "Membuat ulasan baru untuk sebuah reservasi. User ID diinput secara manual.",
+                "operationId": "6e21d04d5ceed8dff4d339c3f504e6f4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "user_id",
+                                    "reservation_id",
+                                    "rating"
+                                ],
+                                "properties": {
+                                    "user_id": {
+                                        "description": "ID User yang memberikan review.",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "reservation_id": {
+                                        "description": "ID Reservasi yang direview.",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "rating": {
+                                        "description": "Rating dari 1 sampai 5.",
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "comment": {
+                                        "description": "Komentar atau ulasan.",
+                                        "type": "string",
+                                        "example": "Sangat memuaskan!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Review berhasil dibuat"
+                    },
+                    "422": {
+                        "description": "Validation Error (Data tidak valid)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reviews/{id}": {
+            "get": {
+                "tags": [
+                    "Review"
+                ],
+                "summary": "Tampilkan detail review",
+                "description": "Mengambil detail satu data review berdasarkan ID-nya.",
+                "operationId": "9d143bc4da3802a9c265f6801f2147f9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Review",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil detail review"
+                    },
+                    "404": {
+                        "description": "Not Found (Review tidak ditemukan)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Review"
+                ],
+                "summary": "Update sebuah review",
+                "description": "Memperbarui data review. Idealnya, hanya user yang membuat review atau admin yang bisa melakukan ini.",
+                "operationId": "f1b4752d53b5caf380b4825e13be5e8f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Review",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "rating": {
+                                        "description": "Rating dari 1 sampai 5.",
+                                        "type": "integer",
+                                        "example": 4
+                                    },
+                                    "comment": {
+                                        "description": "Komentar atau ulasan.",
+                                        "type": "string",
+                                        "example": "Cukup baik, tapi bisa lebih bersih."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Review berhasil diupdate"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "403": {
+                        "description": "Forbidden (jika ada hak akses)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Review"
+                ],
+                "summary": "Hapus sebuah review",
+                "description": "Menghapus review. Idealnya, hanya user yang membuat review atau admin yang bisa melakukan ini.",
+                "operationId": "b6e7444309a874f959e6c30d2606d176",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Review",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Review berhasil dihapus"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "403": {
+                        "description": "Forbidden (jika ada hak akses)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/room": {
             "get": {
                 "tags": [
                     "Room"
                 ],
-                "summary": "Ambil daftar semua room",
+                "summary": "Menampilkan semua kamar",
                 "operationId": "1758cfa0a4f31164f32a8c2192f97d86",
                 "responses": {
                     "200": {
-                        "description": "Berhasil ambil data"
-                    },
-                    "500": {
-                        "description": "Gagal ambil data"
+                        "description": "List kamar berhasil diambil"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
                     "Room"
                 ],
-                "summary": "Buat room baru",
+                "summary": "Membuat kamar baru",
                 "operationId": "9be38be1eed9b9d7e62fd45fca294b7c",
                 "requestBody": {
                     "required": true,
@@ -181,8 +956,7 @@
                                 ],
                                 "properties": {
                                     "RoomNumber": {
-                                        "type": "string",
-                                        "example": "A101"
+                                        "type": "string"
                                     },
                                     "RoomType": {
                                         "type": "string",
@@ -195,8 +969,7 @@
                                         ]
                                     },
                                     "Capacity": {
-                                        "type": "integer",
-                                        "example": 2
+                                        "type": "integer"
                                     },
                                     "Status": {
                                         "type": "string",
@@ -206,19 +979,10 @@
                                         ]
                                     },
                                     "defaultPrice": {
-                                        "type": "number",
-                                        "format": "float",
-                                        "example": 500000
+                                        "type": "number"
                                     },
                                     "defaultExtraBedPrice": {
-                                        "type": "number",
-                                        "format": "float",
-                                        "example": 100000
-                                    },
-                                    "discount": {
-                                        "type": "number",
-                                        "format": "float",
-                                        "example": 10
+                                        "type": "number"
                                     }
                                 },
                                 "type": "object"
@@ -228,12 +992,14 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Room berhasil dibuat"
-                    },
-                    "500": {
-                        "description": "Validasi gagal"
+                        "description": "Kamar berhasil dibuat"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/room/{id}": {
@@ -241,7 +1007,7 @@
                 "tags": [
                     "Room"
                 ],
-                "summary": "Ambil detail room berdasarkan ID",
+                "summary": "Menampilkan detail kamar berdasarkan ID",
                 "operationId": "c45e99f9ccf62d45114462c46ea5036a",
                 "parameters": [
                     {
@@ -255,18 +1021,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Berhasil ambil data"
+                        "description": "Detail kamar ditemukan"
                     },
                     "404": {
-                        "description": "Room tidak ditemukan"
+                        "description": "Kamar tidak ditemukan"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
                     "Room"
                 ],
-                "summary": "Update data room",
+                "summary": "Update data kamar",
                 "operationId": "096109bd729e9ee91d620d1b883d87df",
                 "parameters": [
                     {
@@ -279,14 +1050,12 @@
                     }
                 ],
                 "requestBody": {
-                    "required": true,
                     "content": {
-                        "multipart/form-data": {
+                        "application/json": {
                             "schema": {
                                 "properties": {
                                     "RoomNumber": {
-                                        "type": "string",
-                                        "example": "A101"
+                                        "type": "string"
                                     },
                                     "RoomType": {
                                         "type": "string",
@@ -299,8 +1068,7 @@
                                         ]
                                     },
                                     "Capacity": {
-                                        "type": "integer",
-                                        "example": 2
+                                        "type": "integer"
                                     },
                                     "Status": {
                                         "type": "string",
@@ -309,23 +1077,11 @@
                                             "maintenance"
                                         ]
                                     },
-                                    "imageShowRoom": {
-                                        "type": "file"
-                                    },
                                     "defaultPrice": {
-                                        "type": "number",
-                                        "format": "float",
-                                        "example": 500000
+                                        "type": "number"
                                     },
                                     "defaultExtraBedPrice": {
-                                        "type": "number",
-                                        "format": "float",
-                                        "example": 100000
-                                    },
-                                    "discount": {
-                                        "type": "number",
-                                        "format": "float",
-                                        "example": 10
+                                        "type": "number"
                                     }
                                 },
                                 "type": "object"
@@ -335,18 +1091,20 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Room berhasil diupdate"
-                    },
-                    "404": {
-                        "description": "Room tidak ditemukan"
+                        "description": "Kamar berhasil diupdate"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
                     "Room"
                 ],
-                "summary": "Hapus room",
+                "summary": "Hapus kamar berdasarkan ID",
                 "operationId": "ba010fe020114b40d872de5e7913a8d5",
                 "parameters": [
                     {
@@ -360,12 +1118,17 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Room berhasil dihapus"
+                        "description": "Kamar berhasil dihapus"
                     },
                     "404": {
-                        "description": "Room tidak ditemukan"
+                        "description": "Kamar tidak ditemukan"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         }
     },
@@ -382,6 +1145,22 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Payment",
+            "description": "Payment"
+        },
+        {
+            "name": "Midtrans Webhook",
+            "description": "Midtrans Webhook"
+        },
+        {
+            "name": "Reservation",
+            "description": "Reservation"
+        },
+        {
+            "name": "Review",
+            "description": "Review"
         },
         {
             "name": "Room",

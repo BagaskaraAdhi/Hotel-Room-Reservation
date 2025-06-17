@@ -8,10 +8,21 @@ use App\Models\Room;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use OpenApi\Annotations as OA; // ANOTASI DITAMBAHKAN
 
 class ReservationController extends Controller
 {
-    // View all (admin) or own (user)
+    /**
+     * @OA\Get(
+     * path="/api/reservations",
+     * summary="Tampilkan semua reservasi",
+     * description="Admin melihat semua reservasi. User hanya melihat reservasi miliknya sendiri.",
+     * tags={"Reservation"},
+     * security={{"sanctum":{}}},
+     * @OA\Response(response=200, description="Berhasil mengambil data reservasi"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function index()
     {
         $user = Auth::user();
@@ -28,7 +39,20 @@ class ReservationController extends Controller
         ]);
     }
 
-    // Show by ID
+    /**
+     * @OA\Get(
+     * path="/api/reservations/{id}",
+     * summary="Tampilkan detail reservasi",
+     * description="Admin dapat melihat detail reservasi manapun. User hanya dapat melihat miliknya.",
+     * tags={"Reservation"},
+     * security={{"sanctum":{}}},
+     * @OA\Parameter(name="id", in="path", required=true, description="ID Reservasi", @OA\Schema(type="integer")),
+     * @OA\Response(response=200, description="Berhasil mengambil detail reservasi"),
+     * @OA\Response(response=403, description="Forbidden (tidak punya hak akses)"),
+     * @OA\Response(response=404, description="Not Found (data tidak ditemukan)"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function show($id)
     {
         $user = Auth::user();
@@ -45,7 +69,29 @@ class ReservationController extends Controller
         return response()->json(['success' => true, 'data' => $reservation]);
     }
 
-    // Create (Admin or User)
+    /**
+     * @OA\Post(
+     * path="/api/reservations",
+     * summary="Buat reservasi baru",
+     * description="User membuat reservasi untuk dirinya sendiri. Admin bisa membuat reservasi untuk user lain dengan menyertakan 'user_id'.",
+     * tags={"Reservation"},
+     * security={{"sanctum":{}}},
+     * @OA\RequestBody(
+     * required=true,
+     * @OA\JsonContent(
+     * required={"room_id", "check_in_date", "check_out_date"},
+     * @OA\Property(property="room_id", type="integer", example=1),
+     * @OA\Property(property="check_in_date", type="string", format="date", example="2025-12-20"),
+     * @OA\Property(property="check_out_date", type="string", format="date", example="2025-12-22"),
+     * @OA\Property(property="extra_beds", type="integer", example=1),
+     * @OA\Property(property="user_id", type="integer", description="[Khusus Admin] ID user yang melakukan reservasi.", example=2)
+     * )
+     * ),
+     * @OA\Response(response=201, description="Reservasi berhasil dibuat"),
+     * @OA\Response(response=422, description="Validation Error"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function store(Request $request)
     {
         $user = Auth::user();
@@ -56,24 +102,16 @@ class ReservationController extends Controller
             'check_in_date' => 'required|date',
             'check_out_date' => 'required|date|after_or_equal:check_in_date',
             'extra_beds' => 'nullable|integer|min:0',
-            'user_id' => $isAdmin ? 'required|exists:users,id' : 'sometimes|nullable', // biarkan bisa dikirim tapi opsional untuk user biasa
+            'user_id' => $isAdmin ? 'required|exists:users,id' : '',
         ]);
-
-        // ❌ Blokir user biasa yang mencoba menyertakan user_id
-        if (!$isAdmin && isset($validated['user_id'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hanya admin yang bisa mengubah data user_id.',
-            ], 403);
-        }
 
         $room = Room::findOrFail($validated['room_id']);
         $extraBeds = $validated['extra_beds'] ?? 0;
 
         $defaultPrice = $room->defaultPrice;
         $extraBedPrice = $extraBeds * $room->defaultExtraBedPrice;
-
         $discountPercentage = $room->discount ? $room->discount / 100 : 0;
+
         $totalPrice = ($defaultPrice + $extraBedPrice) - ($defaultPrice * $discountPercentage);
 
         $reservation = reservation::create([
@@ -104,18 +142,37 @@ class ReservationController extends Controller
         ]);
     }
 
-    // Update (Admin full, User limited)
+    /**
+     * @OA\Put(
+     * path="/api/reservations/{id}",
+     * summary="Update reservasi",
+     * description="Admin bisa update semua field. User hanya bisa update check_in_date, check_out_date, dan extra_beds.",
+     * tags={"Reservation"},
+     * security={{"sanctum":{}}},
+     * @OA\Parameter(name="id", in="path", required=true, description="ID Reservasi", @OA\Schema(type="integer")),
+     * @OA\RequestBody(
+     * required=true,
+     * @OA\JsonContent(
+     * @OA\Property(property="check_in_date", type="string", format="date", example="2025-12-21"),
+     * @OA\Property(property="extra_beds", type="integer", example=0),
+     * @OA\Property(property="status", type="string", enum={"pending","confirmed","cancelled","CheckIn","CheckOut"}, description="[Khusus Admin] Status reservasi.")
+     * )
+     * ),
+     * @OA\Response(response=200, description="Reservasi berhasil diupdate"),
+     * @OA\Response(response=403, description="Forbidden"),
+     * @OA\Response(response=404, description="Not Found"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function update(Request $request, $id)
     {
         $reservation = reservation::findOrFail($id);
         $user = Auth::user();
 
-        // Cek hak akses user terhadap data ini
         if ($user->role !== 'admin' && $reservation->user_id !== $user->id) {
             return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
         }
 
-        // Aturan validasi
         $rules = $user->role === 'admin'
             ? [
                 'user_id' => 'sometimes|exists:users,id',
@@ -133,24 +190,19 @@ class ReservationController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Cek jika user mencoba menyisipkan user_id atau room_id padahal bukan admin
-        if ($user->role !== 'admin' && ($request->has('user_id') || $request->has('room_id') || $request->has('status'))) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hanya admin yang bisa mengubah data user_id, room_id, atau status.'
-            ], 403);
-        }
-
-        // Isi data yang tervalidasi
         $reservation->fill($validated);
 
-        // Hitung ulang total_price dan extra_bed_price
         $room = $reservation->room;
+
+        // Hitung harga extra bed
         $extraBeds = $reservation->extra_beds ?? 0;
         $reservation->extra_bed_price = $extraBeds * $room->defaultExtraBedPrice;
 
-        $discountPercentage = $room->discount ? $room->discount / 100 : 0;
-        $reservation->total_price = ($room->defaultPrice + $reservation->extra_bed_price) - ($room->defaultPrice * $discountPercentage);
+        // Ambil diskon nominal langsung dari database
+        $nominalDiscount = $room->discount ?? 0;
+
+        // Hitung harga total
+        $reservation->total_price = ($room->defaultPrice + $reservation->extra_bed_price) - $nominalDiscount;
 
         $reservation->save();
 
@@ -161,11 +213,28 @@ class ReservationController extends Controller
         ]);
     }
 
-
-    // Delete
+    /**
+     * @OA\Delete(
+     * path="/api/reservations/{id}",
+     * summary="Hapus reservasi",
+     * description="Menghapus reservasi. Hanya admin atau user yang memiliki reservasi yang bisa menghapus.",
+     * tags={"Reservation"},
+     * security={{"sanctum":{}}},
+     * @OA\Parameter(name="id", in="path", required=true, description="ID Reservasi", @OA\Schema(type="integer")),
+     * @OA\Response(response=200, description="Reservasi berhasil dihapus"),
+     * @OA\Response(response=403, description="Forbidden (bukan pemilik atau admin)"),
+     * @OA\Response(response=404, description="Not Found"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function destroy($id)
     {
         $reservation = reservation::with(['user', 'room'])->findOrFail($id);
+        $user = Auth::user();
+
+        if ($user->role !== 'admin' && $reservation->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+        }
 
         $reservation->delete();
 
