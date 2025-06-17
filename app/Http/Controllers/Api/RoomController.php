@@ -64,11 +64,12 @@ class RoomController extends Controller
                 'imageShowRoom' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
                 'defaultPrice' => 'required|numeric|min:0',
                 'defaultExtraBedPrice' => 'required|numeric|min:0',
+                'discount' => 'nullable|numeric|min:0|max:100',
             ]);
 
             if ($request->hasFile('imageShowRoom')) {
                 $image = $request->file('imageShowRoom');
-                $imageName = time() . '_' . $image->getClientOriginalName(); // membuat nama file unik
+                $imageName = time() . '_' . $image->getClientOriginalName();
                 $image->move(public_path('uploads/room'), $imageName);
                 $validated['imageShowRoom'] = 'uploads/room/' . $imageName;
             }
@@ -102,24 +103,25 @@ class RoomController extends Controller
             }
 
             $validated = $request->validate([
-                'RoomNumber' => 'sometimes|string|max:10|unique:room,RoomNumber,'.$room->id,
+                'RoomNumber' => 'sometimes|string|max:10|unique:room,RoomNumber,' . $room->id,
                 'RoomType' => 'sometimes|string|in:single,double,twin,family,suite',
-                'Capacity' => 'sometimes|integer|min:1',
+                'Capacity' => 'sometimes|numeric|min:1',
                 'Status' => 'sometimes|string|in:ready,maintenance',
                 'imageShowRoom' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
                 'defaultPrice' => 'sometimes|numeric|min:0',
                 'defaultExtraBedPrice' => 'sometimes|numeric|min:0',
+                'discount' => 'nullable|numeric|min:0|max:100',
             ]);
 
             if ($request->hasFile('imageShowRoom')) {
                 $image = $request->file('imageShowRoom');
                 $imageName = time().'_'.$image->getClientOriginalName();
-                $image->move(public_path('uploads/room'),$imageName);
+                $image->move(public_path('uploads/room'), $imageName);
                 $validated['imageShowRoom'] = 'uploads/room/'.$imageName;
             }
 
             $room->update($validated);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Room updated successfully',

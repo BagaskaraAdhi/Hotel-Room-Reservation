@@ -15,7 +15,7 @@ class Room extends Model
 
     protected $fillable = [
         'RoomNumber', 'RoomType', 'Capacity', 'Status', 'imageShowRoom',
-        'defaultPrice', 'defaultExtraBedPrice',
+        'defaultPrice', 'defaultExtraBedPrice', 'discount',
     ];
 
     protected $hidden = [

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('room', function (Blueprint $table) {
             $table->id();
             $table->string('RoomNumber')->unique();
-            $table->enum('RoomType', ['Single', 'double', 'twin', 'family', 'suite']);
+            $table->enum('RoomType', ['single', 'double', 'twin', 'family', 'suite']);
             $table->integer('Capacity');
             $table->enum('Status', ['ready', 'maintenance']);
             $table->string('imageShowRoom')->nullable();
