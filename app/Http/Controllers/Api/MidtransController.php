@@ -16,33 +16,35 @@ class MidtransController extends Controller
 {
     public function index()
     {
-        return Payment::all();
+        return Payment::with('reservation.user', 'reservation.room')->get();
     }
 
     public function store(Request $request)
     {
         try {
-            // Validasi amount dan payment_method
+            // Validasi input
             $request->validate([
+                'reservation_id' => 'required|exists:reservation,id',
                 'amount' => 'required|numeric|min:1',
                 'payment_method' => 'nullable|in:credit_card,debit_card,cash,online',
                 'customer_name' => 'nullable|string',
             ]);
 
-            // Buat payment record hanya dengan payment_method dan status (tidak ada amount)
+            // Buat payment terkait reservation
             $payment = Payment::create([
+                'reservation_id' => $request->reservation_id,
                 'payment_method' => $request->payment_method ?? 'online',
                 'status' => 'Unpaid',
-                'amount' => $request->amount, // Simpan amount untuk digunakan di Midtrans
+                'amount' => $request->amount,
             ]);
 
             // Konfigurasi Midtrans
-            Config::$serverKey = config('midtrans.server_key');
-            Config::$isProduction = config('midtrans.is_production');
-            Config::$isSanitized = true;
-            Config::$is3ds = true;
+            \Midtrans\Config::$serverKey = config('midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('midtrans.is_production');
+            \Midtrans\Config::$isSanitized = true;
+            \Midtrans\Config::$is3ds = true;
 
-            // Parameter untuk Midtrans (order_id tetap id payment, gross_amount dari request)
+            // Parameter Snap
             $params = [
                 'transaction_details' => [
                     'order_id' => $payment->id,
@@ -52,14 +54,13 @@ class MidtransController extends Controller
                     'first_name' => $request->customer_name ?? 'Customer',
                 ],
                 'expiry' => [
-                    'start_time' => date("Y-m-d H:i:s O"), // 2025-06-06 15:00:00 +0700
+                    'start_time' => date("Y-m-d H:i:s O"),
                     'unit' => 'minute',
-                    'duration' =>  2 // token berlaku 2 jam
+                    'duration' => 120
                 ]
             ];
 
-            // Ambil Snap Token
-            $snapToken = Snap::getSnapToken($params);
+            $snapToken = \Midtrans\Snap::getSnapToken($params);
 
             return response()->json([
                 'payment' => $payment,
@@ -75,7 +76,18 @@ class MidtransController extends Controller
 
     public function show($id)
     {
-        return Payment::findOrFail($id);
+        $payment = Payment::with(['reservation.user', 'reservation.room'])->findOrFail($id);
+
+        return response()->json([
+            'payment' => $payment,
+            'reservation' => [
+                'check_in' => $payment->reservation->check_in_date,
+                'check_out' => $payment->reservation->check_out_date,
+                'total_price' => $payment->reservation->total_price,
+                'room' => $payment->reservation->room->RoomType ?? null,
+                'user' => $payment->reservation->user->username ?? null,
+            ],
+        ]);
     }
 
     public function update(Request $request, $id)
