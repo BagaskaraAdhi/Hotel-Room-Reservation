@@ -23,7 +23,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reservations/{id}', [ReservationController::class, 'show']);
     Route::post('/reservations', [ReservationController::class, 'store']);
     Route::put('/reservations/{id}', [ReservationController::class, 'update']);
-    Route::delete('/reservations/{id}', [ReservationController::class, 'destroy']);
 
     Route::get('/payments', [MidtransController::class, 'index']);
     Route::get('/payments/{id}', [MidtransController::class, 'show']);
@@ -43,6 +42,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::put('/payments/{id}', [MidtransController::class, 'update']);
         Route::delete('/payments/{id}', [MidtransController::class, 'destroy']);
+
+        Route::delete('/reservations/{id}', [ReservationController::class, 'destroy']);
     });
 });
 
