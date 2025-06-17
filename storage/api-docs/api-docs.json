@@ -2,7 +2,8 @@
     "openapi": "3.0.0",
     "info": {
         "title": "Hotel Room Reservation",
-        "version": "1.0"
+        "description": "API Documentation for Hotel Room Reservation",
+        "version": "1.0.0"
     },
     "paths": {
         "/api/register": {
@@ -10,7 +11,7 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Registrasi akun baru",
+                "summary": "Register user baru",
                 "operationId": "8e4e3cb7b46126f4696379d3c7eeb4ad",
                 "requestBody": {
                     "required": true,
@@ -19,14 +20,14 @@
                             "schema": {
                                 "required": [
                                     "username",
-                                    "phone_number",
                                     "email",
-                                    "password"
+                                    "password",
+                                    "phone_number"
                                 ],
                                 "properties": {
                                     "username": {
                                         "type": "string",
-                                        "example": "alif"
+                                        "example": "john_doe"
                                     },
                                     "role": {
                                         "type": "string",
@@ -42,13 +43,11 @@
                                     },
                                     "email": {
                                         "type": "string",
-                                        "format": "email",
-                                        "example": "alif@gmail.com"
+                                        "example": "john@gmail.com"
                                     },
                                     "password": {
                                         "type": "string",
-                                        "format": "password",
-                                        "example": "alif1234"
+                                        "example": "password123"
                                     }
                                 },
                                 "type": "object"
@@ -58,7 +57,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "User berhasil diregistrasi"
+                        "description": "Berhasil register"
                     },
                     "422": {
                         "description": "Validasi gagal"
@@ -71,7 +70,7 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Login dan dapatkan token JWT (berlaku 2 jam)",
+                "summary": "Login user",
                 "operationId": "222b2625838e3c57e017987f73598fda",
                 "requestBody": {
                     "required": true,
@@ -85,12 +84,11 @@
                                 "properties": {
                                     "email": {
                                         "type": "string",
-                                        "format": "email",
-                                        "example": "alif@gmail.com"
+                                        "example": "john@gmail.com"
                                     },
                                     "password": {
                                         "type": "string",
-                                        "example": "alif1234"
+                                        "example": "password123"
                                     }
                                 },
                                 "type": "object"
@@ -100,13 +98,10 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Login berhasil"
-                    },
-                    "401": {
-                        "description": "Kredensial salah"
+                        "description": "Berhasil login"
                     },
                     "422": {
-                        "description": "Validasi gagal"
+                        "description": "validation failed"
                     }
                 }
             }
@@ -116,19 +111,16 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Logout user (hapus token saat ini)",
+                "summary": "Logout user",
                 "operationId": "ad65cbbd4e9f201619eae184a5961a98",
                 "responses": {
                     "200": {
-                        "description": "Logout berhasil"
-                    },
-                    "401": {
-                        "description": "Unauthorized"
+                        "description": "Berhasil logout"
                     }
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "sanctum": []
                     }
                 ]
             }
@@ -138,62 +130,95 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Get data user yang sedang login",
+                "summary": "Ambil data user yang sedang login",
                 "operationId": "8367feff40ba10e43187792cad3132c1",
                 "responses": {
                     "200": {
-                        "description": "User data berhasil ditampilkan"
-                    },
-                    "401": {
-                        "description": "Unauthorized"
+                        "description": "Data user saat ini"
                     }
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "sanctum": []
                     }
                 ]
             }
         },
-        "/api/payments": {
+        "/api/room": {
             "get": {
                 "tags": [
-                    "Payments"
+                    "Room"
                 ],
-                "summary": "Menampilkan semua data pembayaran",
-                "operationId": "c7732b5197593b9216465b4c89957bdb",
+                "summary": "Ambil daftar semua room",
+                "operationId": "1758cfa0a4f31164f32a8c2192f97d86",
                 "responses": {
                     "200": {
-                        "description": "Daftar pembayaran berhasil ditampilkan"
+                        "description": "Berhasil ambil data"
+                    },
+                    "500": {
+                        "description": "Gagal ambil data"
                     }
                 }
             },
             "post": {
                 "tags": [
-                    "Payments"
+                    "Room"
                 ],
-                "summary": "Membuat pembayaran dan mendapatkan Snap Token",
-                "operationId": "4d18b974f35e5bcc5443060b26a3e053",
+                "summary": "Buat room baru",
+                "operationId": "9be38be1eed9b9d7e62fd45fca294b7c",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "amount"
+                                    "RoomNumber",
+                                    "RoomType",
+                                    "Capacity",
+                                    "Status",
+                                    "defaultPrice",
+                                    "defaultExtraBedPrice"
                                 ],
                                 "properties": {
-                                    "amount": {
+                                    "RoomNumber": {
+                                        "type": "string",
+                                        "example": "A101"
+                                    },
+                                    "RoomType": {
+                                        "type": "string",
+                                        "enum": [
+                                            "single",
+                                            "double",
+                                            "twin",
+                                            "family",
+                                            "suite"
+                                        ]
+                                    },
+                                    "Capacity": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "Status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ready",
+                                            "maintenance"
+                                        ]
+                                    },
+                                    "defaultPrice": {
                                         "type": "number",
+                                        "format": "float",
+                                        "example": 500000
+                                    },
+                                    "defaultExtraBedPrice": {
+                                        "type": "number",
+                                        "format": "float",
                                         "example": 100000
                                     },
-                                    "payment_method": {
-                                        "type": "string",
-                                        "example": "credit_card"
-                                    },
-                                    "customer_name": {
-                                        "type": "string",
-                                        "example": "John Doe"
+                                    "discount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 10
                                     }
                                 },
                                 "type": "object"
@@ -202,27 +227,26 @@
                     }
                 },
                 "responses": {
-                    "200": {
-                        "description": "Snap token berhasil dibuat"
+                    "201": {
+                        "description": "Room berhasil dibuat"
                     },
                     "500": {
-                        "description": "Gagal membuat pembayaran"
+                        "description": "Validasi gagal"
                     }
                 }
             }
         },
-        "/api/payments/{id}": {
+        "/api/room/{id}": {
             "get": {
                 "tags": [
-                    "Payments"
+                    "Room"
                 ],
-                "summary": "Menampilkan detail pembayaran berdasarkan ID",
-                "operationId": "09b5ced23a60fac5708da0d1d5f98ae2",
+                "summary": "Ambil detail room berdasarkan ID",
+                "operationId": "c45e99f9ccf62d45114462c46ea5036a",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "ID pembayaran",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -231,24 +255,23 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Detail pembayaran ditemukan"
+                        "description": "Berhasil ambil data"
                     },
                     "404": {
-                        "description": "Pembayaran tidak ditemukan"
+                        "description": "Room tidak ditemukan"
                     }
                 }
             },
             "put": {
                 "tags": [
-                    "Payments"
+                    "Room"
                 ],
-                "summary": "Update data pembayaran",
-                "operationId": "c422013925aafb7d1e2bed4a12edfa84",
+                "summary": "Update data room",
+                "operationId": "096109bd729e9ee91d620d1b883d87df",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "ID pembayaran",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -256,17 +279,53 @@
                     }
                 ],
                 "requestBody": {
+                    "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "properties": {
-                                    "status": {
+                                    "RoomNumber": {
                                         "type": "string",
-                                        "example": "Paid"
+                                        "example": "A101"
                                     },
-                                    "payment_method": {
+                                    "RoomType": {
                                         "type": "string",
-                                        "example": "credit_card"
+                                        "enum": [
+                                            "single",
+                                            "double",
+                                            "twin",
+                                            "family",
+                                            "suite"
+                                        ]
+                                    },
+                                    "Capacity": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "Status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ready",
+                                            "maintenance"
+                                        ]
+                                    },
+                                    "imageShowRoom": {
+                                        "type": "file"
+                                    },
+                                    "defaultPrice": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 500000
+                                    },
+                                    "defaultExtraBedPrice": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 100000
+                                    },
+                                    "discount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 10
                                     }
                                 },
                                 "type": "object"
@@ -276,24 +335,23 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Pembayaran berhasil diupdate"
+                        "description": "Room berhasil diupdate"
                     },
                     "404": {
-                        "description": "Pembayaran tidak ditemukan"
+                        "description": "Room tidak ditemukan"
                     }
                 }
             },
             "delete": {
                 "tags": [
-                    "Payments"
+                    "Room"
                 ],
-                "summary": "Menghapus pembayaran berdasarkan ID",
-                "operationId": "18cbb5ddf4ff49fb0a0d914555029a43",
+                "summary": "Hapus room",
+                "operationId": "ba010fe020114b40d872de5e7913a8d5",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "ID pembayaran",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -302,62 +360,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Pembayaran berhasil dihapus"
-                    }
-                }
-            }
-        },
-        "/api/payments/callback": {
-            "post": {
-                "tags": [
-                    "Payments"
-                ],
-                "summary": "Callback dari Midtrans untuk update status pembayaran",
-                "operationId": "418c20a88301c4a0f1481c3bc1f5ad98",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "signature_key",
-                                    "order_id",
-                                    "status_code",
-                                    "gross_amount",
-                                    "transaction_status"
-                                ],
-                                "properties": {
-                                    "signature_key": {
-                                        "type": "string"
-                                    },
-                                    "order_id": {
-                                        "type": "string"
-                                    },
-                                    "status_code": {
-                                        "type": "string"
-                                    },
-                                    "gross_amount": {
-                                        "type": "string"
-                                    },
-                                    "transaction_status": {
-                                        "type": "string",
-                                        "example": "settlement"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Status pembayaran diperbarui"
-                    },
-                    "403": {
-                        "description": "Signature tidak valid"
+                        "description": "Room berhasil dihapus"
                     },
                     "404": {
-                        "description": "Pembayaran tidak ditemukan"
+                        "description": "Room tidak ditemukan"
                     }
                 }
             }
@@ -365,7 +371,7 @@
     },
     "components": {
         "securitySchemes": {
-            "bearerAuth": {
+            "sanctum": {
                 "type": "http",
                 "bearerFormat": "JWT",
                 "scheme": "bearer"
@@ -375,11 +381,11 @@
     "tags": [
         {
             "name": "Auth",
-            "description": "API untuk autentikasi user dan admin"
+            "description": "Auth"
         },
         {
-            "name": "Payments",
-            "description": "API untuk mengelola pembayaran menggunakan Midtrans"
+            "name": "Room",
+            "description": "Room"
         }
     ]
 }
