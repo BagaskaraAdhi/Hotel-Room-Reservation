@@ -90,31 +90,45 @@ class RoomController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'RoomNumber' => 'required|string|max:10|unique:room',
-            'RoomType' => 'required|string|max:50|in:single,double,twin,family,suite',
-            'Capacity' => 'required|integer|min:1',
-            'Status' => 'required|string|in:ready,maintenance',
-            'imageShowRoom' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'defaultPrice' => 'required|numeric|min:0',
-            'defaultExtraBedPrice' => 'required|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
-        ]);
+        try {
+            $validated = $request->validate([
+                'RoomNumber' => 'required|string|max:10|unique:room',
+                'RoomType' => 'required|string|max:50|in:single,double,twin,family,suite',
+                'Capacity' => 'required|integer|min:1',
+                'Status' => 'required|string|in:ready,maintenance',
+                'imageShowRoom' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+                'defaultPrice' => 'required|numeric|min:0',
+                'defaultExtraBedPrice' => 'required|numeric|min:0',
+                'discount' => 'nullable|numeric|min:0',
+            ]);
 
-        if ($request->hasFile('imageShowRoom')) {
-            $image = $request->file('imageShowRoom');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->move(public_path('uploads/room'), $imageName);
-            $validated['imageShowRoom'] = 'uploads/room/' . $imageName;
+            if ($request->hasFile('imageShowRoom')) {
+                $image = $request->file('imageShowRoom');
+                $imageName = time() . '_' . $image->getClientOriginalName();
+                $image->move(public_path('uploads/room'), $imageName);
+                $validated['imageShowRoom'] = 'uploads/room/' . $imageName;
+            }
+
+            $room = Room::create($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Room created successfully',
+                'data' => $room
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create room',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $room = Room::create($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Room created successfully',
-            'data' => $room
-        ], 201);
     }
 
     /**
