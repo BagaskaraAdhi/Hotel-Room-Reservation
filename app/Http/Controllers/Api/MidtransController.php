@@ -80,6 +80,7 @@ class MidtransController extends Controller
                 'status' => $status,
             ]);
 
+            // Jika cash, tidak perlu proses Midtrans
             if ($validated['payment_method'] === 'cash') {
                 return response()->json([
                     'success' => true,
@@ -88,15 +89,14 @@ class MidtransController extends Controller
                 ]);
             }
 
+            // Midtrans setup
             Config::$serverKey = config('midtrans.server_key');
             Config::$isProduction = config('midtrans.is_production');
             Config::$isSanitized = true;
             Config::$is3ds = true;
 
+            // Tetap buat order_id hanya untuk dikirim ke Midtrans (tidak disimpan ke DB)
             $orderId = 'PAY-' . $payment->id . '-' . time();
-            $payment->order_id = $orderId; // Simpan order_id ke database
-            $payment->save();
-
 
             $params = [
                 'transaction_details' => [
@@ -186,12 +186,16 @@ class MidtransController extends Controller
                 'status' => 'sometimes|in:Unpaid,Paid',
                 'paid_at' => 'nullable|date',
             ]);
+
             $payment = Payment::findOrFail($id);
             $payment->update($validated);
 
             if (isset($validated['status']) && $validated['status'] === 'Paid') {
-                $payment->reservation()->update(['status' => 'confirmed']);
+                if ($payment->reservation) {
+                    $payment->reservation->update(['status' => 'confirmed']);
+                }
             }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Payment updated successfully',
@@ -205,6 +209,7 @@ class MidtransController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * @OA\Delete(
@@ -274,7 +279,7 @@ class MidtransController extends Controller
             $payment = Payment::where('order_id', $orderId)->first();
 
             if (!$payment) {
-                 return response()->json(['message' => 'Payment with given order_id not found'], 404);
+                return response()->json(['message' => 'Payment with given order_id not found'], 404);
             }
 
             // Update status pembayaran
@@ -291,7 +296,6 @@ class MidtransController extends Controller
 
             $payment->save();
             return response()->json(['message' => 'Payment status updated successfully']);
-
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to process notification: ' . $e->getMessage()], 400);
         }
